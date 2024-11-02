@@ -33,7 +33,7 @@ func getWeather(location string) (*Weather, error) {
 
 	if weatherResponse.StatusCode != http.StatusOK {
 		fmt.Println("Error: ", weatherResponse.Status)
-		return nil, err
+		return nil, fmt.Errorf("recived non-OK HTTP Status %s", weatherResponse.Status)
 	}
 
 	body, err := io.ReadAll(weatherResponse.Body)
@@ -68,8 +68,13 @@ func main() {
 		return
 	}
 
-	color.Red("Temp in C: %s", JsonData.CurrentCondition[0].TempC)
-	color.Red("Temp in F: %s", JsonData.CurrentCondition[0].TempF)
-	color.Cyan("Humidity: %s", JsonData.CurrentCondition[0].Humidity)
-	color.Green("Weather Description: %s", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
+	if len(JsonData.CurrentCondition) > 0 {
+		color.Red("Temp in C: %s", JsonData.CurrentCondition[0].TempC)
+		color.Red("Temp in F: %s", JsonData.CurrentCondition[0].TempF)
+		color.Cyan("Humidity: %s", JsonData.CurrentCondition[0].Humidity)
+		color.Green("Weather Description: %s", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
+	} else {
+		fmt.Println("No current weather data available")
+	}
+
 }
