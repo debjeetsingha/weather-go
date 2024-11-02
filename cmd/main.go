@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -19,6 +20,18 @@ type Weather struct {
 			Desc string `json:"value"`
 		} `json:"weatherDesc"`
 	} `json:"current_condition"`
+	HourlyWeather []struct {
+		Hourly []struct {
+			ChanceOfRain    string `json:"chanceofrain"`
+			ChanceOfThunder string `json:"chanceofthunder"`
+			TempC           string `json:"tempC"`
+			TempF           string `json:"tempF"`
+			Time            string `json:"time"`
+			WeatherDesc     []struct {
+				Desc string `json:"value"`
+			}
+		} `json:"hourly"`
+	} `json:"weather"`
 }
 
 type WeatherClient struct {
@@ -56,11 +69,30 @@ func (wc *WeatherClient) getWeather(location string) (*Weather, error) {
 
 }
 
+func PadToFour(s string) string {
+	for len(s) < 4 {
+		s = "0" + s
+	}
+	return s
+}
+
+func ConvertMilitaryToStandard(militaryTime string) (string, error) {
+	if len(militaryTime) != 4 {
+		militaryTime = PadToFour(militaryTime)
+	}
+	formattedTime := militaryTime[:2] + ":" + militaryTime[2:]
+
+	t, err := time.Parse("15:04", formattedTime)
+	if err != nil {
+		return "", err
+	}
+
+	return t.Format("03:04 PM"), nil
+}
+
 func main() {
 
 	wc := &WeatherClient{HTTPClient: http.DefaultClient}
-
-	fmt.Println("--Current Conditions--")
 
 	location := ""
 	args := os.Args
@@ -75,12 +107,37 @@ func main() {
 	}
 
 	if len(JsonData.CurrentCondition) > 0 {
-		color.Red("Temp in C: %s", JsonData.CurrentCondition[0].TempC)
-		color.Red("Temp in F: %s", JsonData.CurrentCondition[0].TempF)
+		fmt.Println("--Current Conditions--")
+		color.Red("Temp in C: %s | Temp in F: %s",
+			JsonData.CurrentCondition[0].TempC,
+			JsonData.CurrentCondition[0].TempF)
 		color.Cyan("Humidity: %s", JsonData.CurrentCondition[0].Humidity)
-		color.Green("Weather Description: %s", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
+		color.Green("Weather Description: %s\n\n", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
 	} else {
 		fmt.Println("No current weather data available")
+	}
+
+	if len(JsonData.HourlyWeather) > 0 {
+		fmt.Println("--Timely Updates--")
+
+		for _, value := range JsonData.HourlyWeather[0].Hourly {
+			standardtime, err := ConvertMilitaryToStandard(value.Time)
+			if err != nil {
+				fmt.Println("Error: ", err)
+				return
+			}
+
+			color.Magenta(standardtime)
+			color.Red("C: %v | F: %v", value.TempC, value.TempF)
+			color.Blue("Chance of rain: %s | Chance of thunderstorm: %v",
+				value.ChanceOfRain,
+				value.ChanceOfThunder)
+			color.HiCyan("Description : %s", value.WeatherDesc[0].Desc)
+			fmt.Println("_________________________________________________")
+			fmt.Println("")
+		}
+	} else {
+		fmt.Println("Hourly update not available")
 	}
 
 }
