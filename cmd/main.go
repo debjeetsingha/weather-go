@@ -20,52 +20,54 @@ type Weather struct {
 	} `json:"current_condition"`
 }
 
-func main() {
-
-	color.Blue("Fetching Weather details...")
-	client := &http.Client{}
-
-	location := ""
-
-	args := os.Args
-	if len(args) > 1 {
-		location = args[1]
-	}
-
+func getWeather(location string) (*Weather, error) {
 	weatherUrl := "https://wttr.in/" + location + "?format=j1"
-	// fmt.Println(weatherUrl)
-
-	weatherResponse, err := client.Get(weatherUrl)
+	weatherResponse, err := http.Get(weatherUrl)
 	if err != nil {
 		fmt.Println("Error getting weather data: ", err)
-		return
+		return nil, err
 	}
 
 	defer weatherResponse.Body.Close()
 
 	if weatherResponse.StatusCode != http.StatusOK {
 		fmt.Println("Error: ", weatherResponse.Status)
-		return
+		return nil, err
 	}
 
 	body, err := io.ReadAll(weatherResponse.Body)
 
 	if err != nil {
 		fmt.Println("Error reading response Body: ", err)
-		return
+		return nil, err
 	}
 
 	var weatherData Weather
 	err = json.Unmarshal(body, &weatherData)
 	if err != nil {
 		fmt.Println("Unable to parse json data: ", err)
-		// panic(err)
+	}
+	return &weatherData, nil
+
+}
+
+func main() {
+
+	color.Blue("Fetching Weather details...")
+
+	location := ""
+	args := os.Args
+	if len(args) > 1 {
+		location = args[1]
 	}
 
-	color.Red("Temp in C: %s\n",
-		weatherData.CurrentCondition[0].TempC)
-	color.Red("Temp in F: %s\n",
-		weatherData.CurrentCondition[0].TempF)
-	color.Green("Weather Description: %s\n",
-		weatherData.CurrentCondition[0].WeatherDesc[0].Desc)
+	JsonData, err := getWeather(location)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	color.Red("Temp in C: %s\n", JsonData.CurrentCondition[0].TempC)
+	color.Red("Temp in F: %s\n", JsonData.CurrentCondition[0].TempF)
+	color.Green("Weather Description: %s\n", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
 }
