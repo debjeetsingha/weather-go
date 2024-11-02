@@ -12,6 +12,7 @@ import (
 
 type Weather struct {
 	CurrentCondition []struct {
+		Humidity    string `json:"humidity"`
 		TempC       string `json:"temp_C"`
 		TempF       string `json:"temp_F"`
 		WeatherDesc []struct {
@@ -53,7 +54,7 @@ func getWeather(location string) (*Weather, error) {
 
 func main() {
 
-	color.Blue("Fetching Weather details...")
+	fmt.Println("--Current Conditions--")
 
 	location := ""
 	args := os.Args
@@ -67,7 +68,8 @@ func main() {
 		return
 	}
 
-	color.Red("Temp in C: %s\n", JsonData.CurrentCondition[0].TempC)
-	color.Red("Temp in F: %s\n", JsonData.CurrentCondition[0].TempF)
-	color.Green("Weather Description: %s\n", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
+	color.Red("Temp in C: %s", JsonData.CurrentCondition[0].TempC)
+	color.Red("Temp in F: %s", JsonData.CurrentCondition[0].TempF)
+	color.Cyan("Humidity: %s", JsonData.CurrentCondition[0].Humidity)
+	color.Green("Weather Description: %s", JsonData.CurrentCondition[0].WeatherDesc[0].Desc)
 }
