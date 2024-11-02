@@ -17,13 +17,17 @@ type Weather struct {
 		TempF       string `json:"temp_F"`
 		WeatherDesc []struct {
 			Desc string `json:"value"`
-		}
+		} `json:"weatherDesc"`
 	} `json:"current_condition"`
 }
 
-func getWeather(location string) (*Weather, error) {
+type WeatherClient struct {
+	HTTPClient *http.Client
+}
+
+func (wc *WeatherClient) getWeather(location string) (*Weather, error) {
 	weatherUrl := "https://wttr.in/" + location + "?format=j1"
-	weatherResponse, err := http.Get(weatherUrl)
+	weatherResponse, err := wc.HTTPClient.Get(weatherUrl)
 	if err != nil {
 		fmt.Println("Error getting weather data: ", err)
 		return nil, err
@@ -54,6 +58,8 @@ func getWeather(location string) (*Weather, error) {
 
 func main() {
 
+	wc := &WeatherClient{HTTPClient: http.DefaultClient}
+
 	fmt.Println("--Current Conditions--")
 
 	location := ""
@@ -62,7 +68,7 @@ func main() {
 		location = args[1]
 	}
 
-	JsonData, err := getWeather(location)
+	JsonData, err := wc.getWeather(location)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
